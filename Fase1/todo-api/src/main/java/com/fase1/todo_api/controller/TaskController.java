@@ -2,12 +2,12 @@ package com.fase1.todo_api.controller;
 
 import com.fase1.todo_api.entity.Task;
 import com.fase1.todo_api.repository.TaskRepository;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 
 @RestController
@@ -21,46 +21,58 @@ public class TaskController {
     }
 
     //Set POST payload
-    public record Payload(Long id, String name, String description){}
+    public record Payload(String title, String description, boolean completed) {
+    }
 
-    //Get all tasks
+    //Get all tasks (Always 200 response)
     @GetMapping
-    public List<Task> getTasks(){
+    public List<Task> getTasks() {
         return repository.findAll();
     }
 
-    //Get one task by id
+    //Get one task by id (200 or 404 response)
     @GetMapping("/{id}")
-    @ResponseStatus()
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id){
-        return repository.findById(id)                        //Optional task
+    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
+        return repository.findById(id)                       //Optional task
                 .map(ResponseEntity::ok)                      // 200 if exist
                 .orElse(ResponseEntity.notFound().build());   // 404 if doesn't exist
     }
 
-    //Create new task
-    @PutMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public void createNewTask(@RequestBody Payload task){
-        repository.save(new Task(task.name, task.description));
-    }
-
-    //Update task
+    //Create new task (201 + created task + locatioon)
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public void updateTask(@RequestBody Payload task){
-        Task existedTask = repository.findById(task.id).orElseThrow();
-        existedTask.setCompleted(true);
-        repository.save(existedTask);
+    public ResponseEntity<Task> createTask(@RequestBody Payload task) {
+        Task savedTask = repository.save(new Task(task.title(), task.description()));
+
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest() // /api/tasks
+                .path("/{id}")                                          // + /{id}
+                .buildAndExpand(savedTask.getId())                      // id = X
+                .toUri();                                               // /api/tasks/X
+
+        return ResponseEntity.created(location).body(savedTask);
     }
 
-    //Delete task
-    @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public ResponseEntity<Task> deleteTask(@PathVariable Long id){
-        return repository.deleteById(id)
-                .map(ResponseEntity::ok)
+    //Update task (200 + updatedTask or 404)
+    @PutMapping("/{id}")
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Payload request) {
+        return repository.findById(id)
+                .map(task -> {
+                    task.setTitle(request.title);
+                    task.setDescription(request.description);
+                    task.setCompleted(request.completed);
+                    return ResponseEntity.ok(repository.save(task));
+                })
                 .orElse(ResponseEntity.notFound().build());
+
     }
 
+    //Delete task (204 or  404)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
+
+    }
 }
