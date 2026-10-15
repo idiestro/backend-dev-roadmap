@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17              # versión fija, nunca "latest"
+    container_name: todo-postgres
+    environment:
+      POSTGRES_DB: tododb           # base de datos que se crea al arrancar
+      POSTGRES_USER: todo
+      POSTGRES_PASSWORD: todo
+    ports:
+      - "5432:5432"                 # puerto de tu PC : puerto del contenedor
+    volumes:
+      - postgres-data:/var/lib/postgresql/data   # aquí viven los datos
+
+volumes:
+  postgres-data:
