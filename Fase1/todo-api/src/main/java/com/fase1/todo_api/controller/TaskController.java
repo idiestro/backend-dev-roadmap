@@ -4,6 +4,7 @@ import com.fase1.todo_api.dto.TaskCreateRequest;
 import com.fase1.todo_api.dto.TaskResponse;
 import com.fase1.todo_api.dto.TaskUpdateRequest;
 import com.fase1.todo_api.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,7 +39,7 @@ public class TaskController {
 
     //Create new task (201 + created task + locatioon)
     @PostMapping
-    public ResponseEntity<TaskResponse> createTask(@RequestBody TaskCreateRequest request) {
+    public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskCreateRequest request) {
         TaskResponse savedTask = taskService.createTask(request);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest() // /api/tasks
@@ -51,7 +52,7 @@ public class TaskController {
 
     //Update task (200 + updatedTask or 404)
     @PutMapping("/{id}")
-    public TaskResponse updateTask(@PathVariable Long id, @RequestBody TaskUpdateRequest request) {
+    public TaskResponse updateTask(@PathVariable Long id, @Valid @RequestBody TaskUpdateRequest request) {
         return taskService.updateTask(id, request);
     }
 
