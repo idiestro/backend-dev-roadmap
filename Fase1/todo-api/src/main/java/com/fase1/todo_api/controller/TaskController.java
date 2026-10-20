@@ -1,7 +1,10 @@
 package com.fase1.todo_api.controller;
 
-import com.fase1.todo_api.entity.Task;
-import com.fase1.todo_api.repository.TaskRepository;
+import com.fase1.todo_api.dto.TaskCreateRequest;
+import com.fase1.todo_api.dto.TaskResponse;
+import com.fase1.todo_api.dto.TaskUpdateRequest;
+import com.fase1.todo_api.service.TaskService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -14,38 +17,33 @@ import java.util.List;
 @RequestMapping("/api/tasks")
 public class TaskController {
 
-    private final TaskRepository repository;
+    private final TaskService taskService;
 
-    public TaskController(TaskRepository repository) {
-        this.repository = repository;
+    public TaskController(TaskService service) {
+        this.taskService = service;
     }
 
-    //Set POST payload
-    public record Payload(String title, String description, boolean completed) {
-    }
 
-    //Get all tasks (Always 200 response)
+    //Get all tasks
     @GetMapping
-    public List<Task> getTasks() {
-        return repository.findAll();
+    public List<TaskResponse> getTasks() {
+        return taskService.findAll();
     }
 
-    //Get one task by id (200 or 404 response)
+    //Get one task by id
     @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        return repository.findById(id)                       //Optional task
-                .map(ResponseEntity::ok)                      // 200 if exist
-                .orElse(ResponseEntity.notFound().build());   // 404 if doesn't exist
+    public TaskResponse getTaskById(@PathVariable Long id) {
+        return taskService.findById(id);
     }
 
     //Create new task (201 + created task + locatioon)
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Payload task) {
-        Task savedTask = repository.save(new Task(task.title(), task.description()));
+    public ResponseEntity<TaskResponse> createTask(@RequestBody TaskCreateRequest request) {
+        TaskResponse savedTask = taskService.createTask(request);
 
         URI location = ServletUriComponentsBuilder.fromCurrentRequest() // /api/tasks
                 .path("/{id}")                                          // + /{id}
-                .buildAndExpand(savedTask.getId())                      // id = X
+                .buildAndExpand(savedTask.id())                         // id = X
                 .toUri();                                               // /api/tasks/X
 
         return ResponseEntity.created(location).body(savedTask);
@@ -53,26 +51,14 @@ public class TaskController {
 
     //Update task (200 + updatedTask or 404)
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Payload request) {
-        return repository.findById(id)
-                .map(task -> {
-                    task.setTitle(request.title);
-                    task.setDescription(request.description);
-                    task.setCompleted(request.completed);
-                    return ResponseEntity.ok(repository.save(task));
-                })
-                .orElse(ResponseEntity.notFound().build());
-
+    public TaskResponse updateTask(@PathVariable Long id, @RequestBody TaskUpdateRequest request) {
+        return taskService.updateTask(id, request);
     }
 
     //Delete task (204 or  404)
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        repository.deleteById(id);
-        return ResponseEntity.noContent().build();
-
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteTask(@PathVariable Long id) {
+        taskService.deleteTask(id);
     }
 }

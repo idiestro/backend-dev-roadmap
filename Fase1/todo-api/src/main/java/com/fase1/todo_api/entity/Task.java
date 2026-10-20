@@ -53,4 +53,8 @@ public class Task {
     public void setCompleted(boolean completed) {
         this.completed = completed;
     }
+
+    public void map(Object o) {
+
+    }
 }
