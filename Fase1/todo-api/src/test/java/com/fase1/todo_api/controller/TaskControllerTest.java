@@ -1,8 +1,6 @@
 package com.fase1.todo_api.controller;
 
-import com.fase1.todo_api.dto.TaskCreateRequest;
 import com.fase1.todo_api.dto.TaskResponse;
-import com.fase1.todo_api.dto.TaskUpdateRequest;
 import com.fase1.todo_api.exception.TaskNotFoundException;
 import com.fase1.todo_api.service.TaskService;
 import org.junit.jupiter.api.DisplayName;
